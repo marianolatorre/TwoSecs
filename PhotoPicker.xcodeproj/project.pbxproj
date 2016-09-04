@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		465AB7B11D7C9230007C32CA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 465AB7B01D7C9230007C32CA /* Assets.xcassets */; };
+		465AB7B31D7CB6BF007C32CA /* CollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465AB7B21D7CB6BF007C32CA /* CollectionViewCell.swift */; };
 		467F6EDD1D74B90700CF60C4 /* ForceTouchGestureRecognizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 467F6EDC1D74B90700CF60C4 /* ForceTouchGestureRecognizer.swift */; };
 		46FF4EBD1A72DA0300350F09 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46FF4EBC1A72DA0300350F09 /* AppDelegate.swift */; };
 		46FF4EBF1A72DA0300350F09 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46FF4EBE1A72DA0300350F09 /* ViewController.swift */; };
@@ -18,6 +19,7 @@
 
 /* Begin PBXFileReference section */
 		465AB7B01D7C9230007C32CA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		465AB7B21D7CB6BF007C32CA /* CollectionViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CollectionViewCell.swift; sourceTree = "<group>"; };
 		467F6EDC1D74B90700CF60C4 /* ForceTouchGestureRecognizer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ForceTouchGestureRecognizer.swift; sourceTree = "<group>"; };
 		46FF4EB71A72DA0300350F09 /* PhotoPicker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoPicker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		46FF4EBB1A72DA0300350F09 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -61,6 +63,7 @@
 				467F6EDC1D74B90700CF60C4 /* ForceTouchGestureRecognizer.swift */,
 				46FF4EBC1A72DA0300350F09 /* AppDelegate.swift */,
 				46FF4EBE1A72DA0300350F09 /* ViewController.swift */,
+				465AB7B21D7CB6BF007C32CA /* CollectionViewCell.swift */,
 				465AB7B01D7C9230007C32CA /* Assets.xcassets */,
 				46FF4EC01A72DA0300350F09 /* Main.storyboard */,
 				46FF4EC31A72DA0300350F09 /* Images.xcassets */,
@@ -153,6 +156,7 @@
 			files = (
 				46FF4EBF1A72DA0300350F09 /* ViewController.swift in Sources */,
 				467F6EDD1D74B90700CF60C4 /* ForceTouchGestureRecognizer.swift in Sources */,
+				465AB7B31D7CB6BF007C32CA /* CollectionViewCell.swift in Sources */,
 				46FF4EBD1A72DA0300350F09 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

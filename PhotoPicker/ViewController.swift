@@ -12,11 +12,13 @@ import AssetsLibrary
 import AVKit
 import QuartzCore
 
-class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UITableViewDelegate, UITableViewDataSource {
+class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UICollectionViewDataSource, UICollectionViewDelegate {
     
+    @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet weak var collectionTopConstraint: NSLayoutConstraint!
+    @IBOutlet weak var collectionHeightConstraint: NSLayoutConstraint!
     @IBOutlet weak var previewView: UIView!
     @IBOutlet weak var playerView: UIView!
-    @IBOutlet weak var trailingTableViewConstraint: NSLayoutConstraint!
     @IBOutlet weak var leadingPlayerViewConstraint: NSLayoutConstraint!
     @IBOutlet weak var takeVideoButton: UIButton!
     
@@ -76,8 +78,6 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         }
     }
     
-    @IBOutlet weak var tableView: UITableView!
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -118,13 +118,10 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
             }
         }
         
-        updateConstraintsForMode()
+        self.collectionHeightConstraint.constant = self.view.frame.size.height - 200
+        self.collectionView.backgroundColor = UIColor.clearColor()
         
-        tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: "cell")
-        tableView.delegate = self
-        tableView.dataSource = self
-        tableView.separatorColor = .clearColor()
-        tableView.backgroundColor = .clearColor()
+        updateConstraintsForMode()
         
         NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(playerDidFinishPlaying), name: AVPlayerItemDidPlayToEndTimeNotification, object: nil)
         
@@ -243,9 +240,9 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     func updateConstraintsForMode() {
         
         if showingTableView {
-            trailingTableViewConstraint.constant = 0
+            collectionTopConstraint.constant = 0
         }else {
-            trailingTableViewConstraint.constant = tableView.frame.size.width * -1
+            collectionTopConstraint.constant = collectionView.frame.size.height * -1
         }
         
         if showingPlayer {
@@ -318,21 +315,30 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         return 1
     }
     
-    func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+    
+    func collectionView(collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return thumbnails.count
     }
     
-    func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
-        let cell : UITableViewCell = tableView.dequeueReusableCellWithIdentifier("cell") as UITableViewCell!
+    // make a cell for each cell index path
+    func collectionView(collectionView: UICollectionView, cellForItemAtIndexPath indexPath: NSIndexPath) -> UICollectionViewCell {
         
-        cell.imageView?.image = thumbnails[indexPath.row]
-        cell.backgroundColor = UIColor.clearColor()
+        // get a reference to our storyboard cell
+        let cell = collectionView.dequeueReusableCellWithReuseIdentifier("collectionCell", forIndexPath: indexPath) as! CollectionViewCell
+        
+        // Use the outlet in our custom class to get a reference to the UILabel in the cell
+        cell.thumbnailImageView.image = thumbnails[indexPath.row]
         
         return cell
     }
     
-    func tableView(tableView: UITableView, heightForRowAtIndexPath indexPath: NSIndexPath) -> CGFloat {
-        return 150.0
+    // MARK: - UICollectionViewDelegate protocol
+    
+    func collectionView(collectionView: UICollectionView, didSelectItemAtIndexPath indexPath: NSIndexPath) {
+        // handle tap events
+        print("You selected cell #\(indexPath.item)!")
+        showingTableView = false
+        animate()
     }
     
     override func prefersStatusBarHidden() -> Bool {
@@ -389,7 +395,6 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         videoClips.append(session.outputURL!)
         thumbnails.append(thumbnail)
         
-        
         print(videoClips)
         
         let textPaths : [String] = videoClips.flatMap{
@@ -400,12 +405,11 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         defaults.setObject(textPaths, forKey: "videoClipPaths")
         
         capturing = false
-        tableView.reloadData()
+        collectionView.reloadData()
         
         self.showingTableView = false
         self.animate()
         
-        self.tableView.reloadData()
         if videoClips.count > 1{
             mergeVideoClips()
         }
