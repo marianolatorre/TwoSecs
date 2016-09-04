@@ -33,7 +33,7 @@
                                 </constraints>
                             </tableView>
                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2U0-hl-Tic" userLabel="Take video">
-                                <rect key="frame" x="260" y="510" width="80" height="80"/>
+                                <rect key="frame" x="260" y="480" width="80" height="80"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="80" id="NvR-Qi-Dql"/>
                                     <constraint firstAttribute="width" constant="80" id="dGg-31-IYi"/>
@@ -60,7 +60,7 @@
                             <constraint firstAttribute="bottomMargin" secondItem="dBT-B0-0Im" secondAttribute="bottom" id="aF2-oy-8wV"/>
                             <constraint firstItem="dBT-B0-0Im" firstAttribute="top" secondItem="Ve3-Fp-5F3" secondAttribute="top" id="bau-4m-lcR"/>
                             <constraint firstAttribute="trailing" secondItem="NLM-Bh-tE0" secondAttribute="trailing" constant="-150" id="dFd-Fi-zQV"/>
-                            <constraint firstItem="g51-da-DN7" firstAttribute="top" secondItem="2U0-hl-Tic" secondAttribute="bottom" constant="10" id="wbZ-V8-qOi"/>
+                            <constraint firstItem="g51-da-DN7" firstAttribute="top" secondItem="2U0-hl-Tic" secondAttribute="bottom" constant="40" id="wbZ-V8-qOi"/>
                             <constraint firstItem="dBT-B0-0Im" firstAttribute="leading" secondItem="Ve3-Fp-5F3" secondAttribute="leading" constant="-600" id="yrr-5L-1vc"/>
                         </constraints>
                     </view>
@@ -69,6 +69,7 @@
                         <outlet property="playerView" destination="dBT-B0-0Im" id="Bbn-tR-e5U"/>
                         <outlet property="previewView" destination="Tva-A5-zck" id="cMy-yO-Km8"/>
                         <outlet property="tableView" destination="NLM-Bh-tE0" id="tDV-v1-RXY"/>
+                        <outlet property="takeVideoButton" destination="2U0-hl-Tic" id="twC-nc-dXC"/>
                         <outlet property="trailingTableViewConstraint" destination="dFd-Fi-zQV" id="ht0-Qn-1AT"/>
                     </connections>
                 </viewController>

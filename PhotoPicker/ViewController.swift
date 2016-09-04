@@ -10,23 +10,21 @@ import UIKit
 import AVFoundation
 import AssetsLibrary
 import AVKit
-import AVFoundation.AVPlayerLayer
+import QuartzCore
 
 class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UITableViewDelegate, UITableViewDataSource {
-
+    
     @IBOutlet weak var previewView: UIView!
     @IBOutlet weak var playerView: UIView!
     @IBOutlet weak var trailingTableViewConstraint: NSLayoutConstraint!
     @IBOutlet weak var leadingPlayerViewConstraint: NSLayoutConstraint!
+    @IBOutlet weak var takeVideoButton: UIButton!
     
     var captureSession: AVCaptureSession?
     var stillImageOutput: AVCaptureStillImageOutput?
     var movieOutput: AVCaptureMovieFileOutput?
     var previewLayer: AVCaptureVideoPreviewLayer?
     var defaults: NSUserDefaults = NSUserDefaults.standardUserDefaults()
-    var capturing : Bool = false
-    var showingTableView : Bool = false
-    var showingPlayer : Bool = false
     var avPlayer : AVPlayer?
     var videoClips:[NSURL] = [NSURL]()
     var thumbnails = [UIImage]()
@@ -35,7 +33,49 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     var audioCapture:AVCaptureDevice?
     var backCameraVideoCapture:AVCaptureDevice?
     var frontCameraVideoCapture:AVCaptureDevice?
-
+    
+    
+    var _capturing : Bool = false
+    var capturing : Bool  {
+        get{
+            return _capturing
+        }
+        set{
+            takeVideoButton.setImage(UIImage(named: newValue ? "recording": "record"), forState: .Normal)
+            
+            if newValue {
+                glowButtonAnimate()
+            }
+            
+            _capturing = newValue
+        }
+    }
+    var _showingTableView : Bool = false
+    var showingTableView : Bool {
+        get {return _showingTableView}
+        set{
+            if newValue {
+                takeVideoButton.setImage(UIImage(named: "Delete-100"), forState: .Normal)
+            }else {
+                takeVideoButton.setImage(UIImage(named: "record"), forState: .Normal)
+            }
+            _showingTableView = newValue
+        }
+    }
+    
+    var _showingPlayer : Bool = false
+    var showingPlayer : Bool {
+        get {return _showingPlayer}
+        set {
+            if newValue {
+                takeVideoButton.setImage(UIImage(named: "Delete-100"), forState: .Normal)
+            }else {
+                takeVideoButton.setImage(UIImage(named: "record"), forState: .Normal)
+            }
+            _showingPlayer = newValue
+        }
+    }
+    
     @IBOutlet weak var tableView: UITableView!
     
     override func viewDidLoad() {
@@ -55,11 +95,10 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
             var error: NSError?
             if clipUrl.checkResourceIsReachableAndReturnError(&error) == false {
                 return
-            }            
-            
+            }
             thumbnails.append(getThumbnail(clipUrl))
         }
-
+        
         captureSession = AVCaptureSession()
         
         let forceTouchRecognizer = ForceTouchGestureRecognizer(target: self, action: #selector(handleForceTouchGesture))
@@ -93,14 +132,14 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
             return
         }
         beginSession()
-
+        
         if videoClips.count > 1 {
             mergeVideoClips()
         }
     }
     
     func beginSession() -> Void {
-    
+        
         captureSession = AVCaptureSession()
         captureSession!.sessionPreset = AVCaptureSessionPresetHigh
         
@@ -145,18 +184,13 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         super.viewDidAppear(animated)
         previewLayer!.frame = previewView.bounds
     }
-
+    
     func handleForceTouchGesture(gestureRecognizer: ForceTouchGestureRecognizer) {
         
         switch gestureRecognizer.state {
         case .Began:
             showingTableView = !showingTableView
             animate()
-        case .Ended:
-            if showingTableView {
-                showingTableView = false
-                animate()
-            }
         default:
             print()
         }
@@ -173,6 +207,18 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         showingPlayer = false
         showingTableView = false
         animate()
+    }
+    
+    func glowButtonAnimate() -> Void {
+        
+        UIView.animateWithDuration(0.3, animations: {
+            self.takeVideoButton.transform = CGAffineTransformMakeScale(1.5, 1.5)
+            }, completion: {
+                (value: Bool) in
+                UIView.animateWithDuration(0.3, animations: {
+                    self.takeVideoButton.transform = CGAffineTransformIdentity
+                })
+        })
     }
     
     func animate() {
@@ -195,7 +241,7 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     }
     
     func updateConstraintsForMode() {
-    
+        
         if showingTableView {
             trailingTableViewConstraint.constant = 0
         }else {
@@ -212,7 +258,39 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     
     @IBAction func captureVideoButton(sender: AnyObject) {
         
-        if !capturing && !showingPlayer {
+        if showingPlayer {
+            showingPlayer = false
+            animate()
+            avPlayer!.pause()
+            return
+        }
+        
+        if showingTableView {
+            let alert = UIAlertController(title: "Alert", message: "Are you sure you want to delete all videos?", preferredStyle: UIAlertControllerStyle.Alert)
+            alert.addAction(UIAlertAction(title: "Yes", style: .Destructive, handler: {
+                action in
+                switch action.style{
+                case .Destructive:
+                    print("destructive")
+                default:
+                    print("default2")
+                }
+                
+            }))
+            alert.addAction(UIAlertAction(title: "Cancel", style: .Cancel, handler: {
+                action in
+                switch action.style{
+                case .Cancel:
+                    print("cancel")
+                default:
+                    print("default1")
+                }
+                
+            }))
+            self.presentViewController(alert, animated: true, completion: nil)
+        }
+        
+        if !capturing && !showingPlayer && !showingTableView {
             capturing = true
             
             let formatter = NSDateFormatter()
@@ -224,11 +302,6 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
             
             movieOutput!.startRecordingToOutputFileURL(outputURL, recordingDelegate: self)
         }
-    }
-    
-    
-    @IBAction func didPressTakeAnother(sender: AnyObject) {
-        captureSession!.startRunning()
     }
     
     func captureOutput(captureOutput: AVCaptureFileOutput!, didStartRecordingToOutputFileAtURL fileURL: NSURL!, fromConnections connections: [AnyObject]!) {
@@ -335,16 +408,15 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         self.tableView.reloadData()
         if videoClips.count > 1{
             mergeVideoClips()
-        }        
+        }
     }
     
     func getThumbnail(outputFileURL:NSURL) -> UIImage {
-       
+        
         print ("thumbnail: \(outputFileURL)")
         let clip = AVURLAsset(URL: outputFileURL)
         let imgGenerator = AVAssetImageGenerator(asset: clip)
-        let cgImage = try! imgGenerator.copyCGImageAtTime(
-            CMTimeMake(0, 1), actualTime: nil)
+        let cgImage = try! imgGenerator.copyCGImageAtTime(CMTimeMake(0, 1), actualTime: nil)
         let uiImage = UIImage(CGImage: cgImage)
         return uiImage
     }
