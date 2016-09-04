@@ -120,6 +120,9 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         
         self.collectionHeightConstraint.constant = self.view.frame.size.height - 200
         self.collectionView.backgroundColor = UIColor.clearColor()
+        let tapAway = UITapGestureRecognizer(target: self, action: #selector(dismissCollection))
+        tapAway.cancelsTouchesInView = false
+        self.collectionView.addGestureRecognizer(tapAway)
         
         updateConstraintsForMode()
         
@@ -133,6 +136,12 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         if videoClips.count > 1 {
             mergeVideoClips()
         }
+    }
+    
+    func dismissCollection(){
+        
+        showingTableView = false
+        animate()
     }
     
     func beginSession() -> Void {
@@ -183,6 +192,10 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     }
     
     func handleForceTouchGesture(gestureRecognizer: ForceTouchGestureRecognizer) {
+        
+        if videoClips.count < 1 {
+            return
+        }
         
         switch gestureRecognizer.state {
         case .Began:
@@ -269,6 +282,7 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
                 switch action.style{
                 case .Destructive:
                     print("destructive")
+                    self.deleteProject()
                 default:
                     print("default2")
                 }
@@ -299,6 +313,27 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
             
             movieOutput!.startRecordingToOutputFileURL(outputURL, recordingDelegate: self)
         }
+    }
+    
+    func deleteProject() {
+    
+        let fileManager = NSFileManager.defaultManager()
+        
+        for clipUrl in videoClips {
+            
+            do {
+                try fileManager.removeItemAtURL(clipUrl)
+            }catch {
+                print("Couldnt delete file")
+            }
+        }
+        
+        videoClips = [NSURL]()
+        thumbnails = [UIImage]()
+        saveVideoClipPaths()
+        showingTableView = false
+        animate()
+        collectionView.reloadData()
     }
     
     func captureOutput(captureOutput: AVCaptureFileOutput!, didStartRecordingToOutputFileAtURL fileURL: NSURL!, fromConnections connections: [AnyObject]!) {
@@ -397,12 +432,7 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         
         print(videoClips)
         
-        let textPaths : [String] = videoClips.flatMap{
-            let theFileName = ($0.absoluteString as NSString).lastPathComponent
-            return theFileName
-        }
-        
-        defaults.setObject(textPaths, forKey: "videoClipPaths")
+        saveVideoClipPaths()
         
         capturing = false
         collectionView.reloadData()
@@ -413,6 +443,16 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         if videoClips.count > 1{
             mergeVideoClips()
         }
+    }
+    
+    func saveVideoClipPaths() {
+    
+        let textPaths : [String] = videoClips.flatMap{
+            let theFileName = ($0.absoluteString as NSString).lastPathComponent
+            return theFileName
+        }
+        
+        defaults.setObject(textPaths, forKey: "videoClipPaths")
     }
     
     func getThumbnail(outputFileURL:NSURL) -> UIImage {
