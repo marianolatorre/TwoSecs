@@ -13,7 +13,7 @@ class CollectionViewCell: UICollectionViewCell {
     @IBOutlet weak var thumbnailImageView: UIImageView!
     
     override func awakeFromNib() {
-        self.layer.borderColor = UIColor.whiteColor().CGColor
+        self.layer.borderColor = UIColor.blackColor().CGColor
         self.layer.borderWidth = 1
         self.layer.cornerRadius = 30
     }

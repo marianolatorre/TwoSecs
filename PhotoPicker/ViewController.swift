@@ -253,7 +253,7 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     func updateConstraintsForMode() {
         
         if showingTableView {
-            collectionTopConstraint.constant = 0
+            collectionTopConstraint.constant = 20
         }else {
             collectionTopConstraint.constant = collectionView.frame.size.height * -1
         }
