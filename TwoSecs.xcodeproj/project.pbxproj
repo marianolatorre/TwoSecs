@@ -70,7 +70,6 @@
 				46FF4EC51A72DA0300350F09 /* LaunchScreen.xib */,
 				46FF4EBA1A72DA0300350F09 /* Supporting Files */,
 			);
-			name = TwoSecs;
 			path = TwoSecs;
 			sourceTree = "<group>";
 		};
