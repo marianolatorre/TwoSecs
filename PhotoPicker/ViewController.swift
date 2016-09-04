@@ -8,7 +8,8 @@
 
 import UIKit
 import AVFoundation
-//import AVFoundation.AVError
+import AssetsLibrary
+import AVKit
 import AVFoundation.AVPlayerLayer
 
 class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UITableViewDelegate, UITableViewDataSource {
@@ -24,22 +25,43 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     var previewLayer: AVCaptureVideoPreviewLayer?
     var defaults: NSUserDefaults = NSUserDefaults.standardUserDefaults()
     let nextVideoKey: String = "nextVideoKey"
-    var maxVideo : Int = 0
     var capturing : Bool = false
     var showingTableView : Bool = false
     var showingPlayer : Bool = false
     var avPlayer : AVPlayer?
-    
-    
+    var videoClips:[NSURL] = [NSURL]()
+    var thumbnails = [UIImage]()
+    var exportReady : Bool = false
+    var lastExport : NSURL?
+    var audioCapture:AVCaptureDevice?
+    var backCameraVideoCapture:AVCaptureDevice?
+    var frontCameraVideoCapture:AVCaptureDevice?
+
     @IBOutlet weak var tableView: UITableView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        videoClips = defaults.objectForKey("videoClips") as? [NSURL] ?? [NSURL]()
+        
+        captureSession = AVCaptureSession()
+        
         let forceTouchRecognizer = ForceTouchGestureRecognizer(target: self, action: #selector(handleForceTouchGesture))
         self.previewView.addGestureRecognizer(forceTouchRecognizer)
         
-        maxVideo = defaults.integerForKey(nextVideoKey)
+        let devices = AVCaptureDevice.devices()
+        for device in devices {
+            
+            if device.hasMediaType(AVMediaTypeAudio){
+                audioCapture = device as? AVCaptureDevice
+            }else if device.hasMediaType(AVMediaTypeVideo){
+                if device.position == AVCaptureDevicePosition.Back{
+                    backCameraVideoCapture = device as? AVCaptureDevice
+                }else{
+                    frontCameraVideoCapture = device as? AVCaptureDevice
+                }
+            }
+        }
         
         updateConstraintsForMode()
         
@@ -50,64 +72,56 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         tableView.backgroundColor = .clearColor()
         
         NSNotificationCenter.defaultCenter().addObserver(self, selector: #selector(playerDidFinishPlaying), name: AVPlayerItemDidPlayToEndTimeNotification, object: nil)
+        
+        if audioCapture == nil{
+            return
+        }
+        beginSession()
+
 
     }
     
-    override func viewWillAppear(animated: Bool) {
-        super.viewWillAppear(animated)
-        
+    func beginSession() -> Void {
+    
         captureSession = AVCaptureSession()
         captureSession!.sessionPreset = AVCaptureSessionPresetHigh
         
-        let backCamera = AVCaptureDevice.defaultDeviceWithMediaType(AVMediaTypeVideo)
-        
-        var error: NSError?
-        var input: AVCaptureDeviceInput!
-        do {
-            input = try AVCaptureDeviceInput(device: backCamera)
-        } catch let error1 as NSError {
-            error = error1
-            input = nil
+        do{
+            try captureSession?.addInput(AVCaptureDeviceInput(device: audioCapture!))
+        }catch{
+            print(error)
+            return
         }
         
-        if error == nil {
-            if captureSession!.canAddInput(input) {
-                captureSession!.addInput(input)
-            }
-            
-            stillImageOutput = AVCaptureStillImageOutput()
-            stillImageOutput!.outputSettings = [AVVideoCodecKey: AVVideoCodecJPEG]
-            
-            if captureSession!.canAddOutput(stillImageOutput) {
-                captureSession!.addOutput(stillImageOutput)
-                
-                previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-                previewLayer!.videoGravity = AVLayerVideoGravityResizeAspectFill
-                previewLayer!.connection?.videoOrientation = AVCaptureVideoOrientation.Portrait
-                previewView.layer.addSublayer(previewLayer!)
-            }
-            
-            movieOutput = AVCaptureMovieFileOutput()
-            movieOutput!.movieFragmentInterval = kCMTimeInvalid
-            movieOutput!.maxRecordedDuration = CMTimeMakeWithSeconds(2,30)
-            
-            if captureSession!.canAddOutput(movieOutput) {
-                captureSession!.addOutput(movieOutput)
-            }
-            
-            captureSession!.startRunning()
+        do{
+            try captureSession?.addInput(AVCaptureDeviceInput(device: backCameraVideoCapture!))
+        }catch{
+            print(error)
+            return
         }
+        
+        stillImageOutput = AVCaptureStillImageOutput()
+        stillImageOutput!.outputSettings = [AVVideoCodecKey: AVVideoCodecJPEG]
+        
+        if captureSession!.canAddOutput(stillImageOutput) {
+            captureSession!.addOutput(stillImageOutput)
+            
+            previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+            previewLayer!.videoGravity = AVLayerVideoGravityResizeAspectFill
+            previewLayer!.connection?.videoOrientation = AVCaptureVideoOrientation.Portrait
+            previewView.layer.addSublayer(previewLayer!)
+        }
+        
+        movieOutput = AVCaptureMovieFileOutput()
+        movieOutput!.movieFragmentInterval = kCMTimeInvalid
+        movieOutput!.maxRecordedDuration = CMTimeMakeWithSeconds(2,30)
+        
+        if captureSession!.canAddOutput(movieOutput) {
+            captureSession!.addOutput(movieOutput)
+        }
+        
+        captureSession!.startRunning()
     }
-    
-    private var tempFilePath: NSURL = {
-        let tempPath = NSURL(fileURLWithPath: NSTemporaryDirectory()).URLByAppendingPathComponent("tempMovie").URLByAppendingPathExtension("mp4").absoluteString
-        if NSFileManager.defaultManager().fileExistsAtPath(tempPath) {
-            do {
-                try NSFileManager.defaultManager().removeItemAtPath(tempPath)
-            } catch { }
-        }
-        return NSURL(string: tempPath)!
-    }()
     
     func documentsSaveDir() -> String {
         let nsDocumentDirectory = NSSearchPathDirectory.DocumentDirectory
@@ -119,29 +133,6 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         return ""
     }
     
-    private func mergedFileUrl(number: Int) -> NSURL {
-        return fileNumber(number, name: "merged_", fileExt: "mp4")
-    }
-    
-    private func videoFileUrl(number: Int) -> NSURL {
-        return fileNumber(number, name: "video_", fileExt: "mp4")
-    }
-
-    private func thumbnailFileUrl(number: Int) -> NSURL {
-        return fileNumber(number, name: "thumbnail_", fileExt: "png")
-    }
-    
-    
-    private func fileNumber(number: Int, name: String, fileExt: String) -> NSURL {
-        
-        let path = NSURL(fileURLWithPath: documentsSaveDir()).URLByAppendingPathComponent(name + String(number)).URLByAppendingPathExtension(fileExt).absoluteString
-        if NSFileManager.defaultManager().fileExistsAtPath(path) {
-            do {
-                try NSFileManager.defaultManager().removeItemAtPath(path)
-            } catch { }
-        }
-        return NSURL(string: path)!
-    }
     
     func handleForceTouchGesture(gestureRecognizer: ForceTouchGestureRecognizer) {
         
@@ -158,7 +149,7 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
             print()
         }
         
-        if gestureRecognizer.force > 0.8  && maxVideo > 0 && !showingPlayer {
+        if gestureRecognizer.force > 0.8  && exportReady && !showingPlayer {
             showingTableView = false
             showingPlayer = true
             startPlayer()
@@ -182,11 +173,13 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     }
     
     func startPlayer() {
-        avPlayer = AVPlayer(URL: mergedFileUrl(maxVideo-1))
-        let playerLayer = AVPlayerLayer(player: avPlayer)
-        playerLayer.frame = self.playerView.bounds
-        self.playerView.layer.addSublayer(playerLayer)
-        avPlayer!.play()
+        if let url = lastExport {
+            avPlayer = AVPlayer(URL: url)
+            let playerLayer = AVPlayerLayer(player: avPlayer)
+            playerLayer.frame = self.playerView.bounds
+            self.playerView.layer.addSublayer(playerLayer)
+            avPlayer!.play()
+        }
     }
     
     func updateConstraintsForMode() {
@@ -215,29 +208,18 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         
         if !capturing {
             capturing = true
-            movieOutput!.startRecordingToOutputFileURL(videoFileUrl(maxVideo), recordingDelegate: self)
-            self.didPressTakePhoto(UIButton())
+            
+            let formatter = NSDateFormatter()
+            formatter.dateFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"
+            let date = NSDate()
+            let documentsPath = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as NSString
+            let outputPath = "\(documentsPath)/\(formatter.stringFromDate(date)).mp4"
+            let outputURL = NSURL(fileURLWithPath: outputPath)
+            
+            movieOutput!.startRecordingToOutputFileURL(outputURL, recordingDelegate: self)
         }
     }
     
-    @IBAction func didPressTakePhoto(sender: UIButton) {
-        
-        if let videoConnection = stillImageOutput!.connectionWithMediaType(AVMediaTypeVideo) {
-            videoConnection.videoOrientation = AVCaptureVideoOrientation.Portrait
-            stillImageOutput?.captureStillImageAsynchronouslyFromConnection(videoConnection, completionHandler: {(sampleBuffer, error) in
-                if (sampleBuffer != nil) {
-                    let imageData = AVCaptureStillImageOutput.jpegStillImageNSDataRepresentation(sampleBuffer)
-                    
-                    do {
-                        try imageData.writeToURL(self.thumbnailFileUrl(self.maxVideo), options: .DataWritingAtomic)
-                    }
-                    catch {
-                        // error!!!
-                    }
-                }
-            })
-        }
-    }
     
     @IBAction func didPressTakeAnother(sender: AnyObject) {
         captureSession!.startRunning()
@@ -249,13 +231,10 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     
     func captureOutput(captureOutput: AVCaptureFileOutput!, didFinishRecordingToOutputFileAtURL outputFileURL: NSURL!, fromConnections connections: [AnyObject]!, error: NSError!) {
         
-        print ("Video \(maxVideo) saved!")
         showingTableView = true
         animate()
-        merge()
+        cropVideo(outputFileURL)
         
-        maxVideo = maxVideo + 1
-        defaults.setInteger(maxVideo, forKey:nextVideoKey)
         capturing = false
         
         tableView.reloadData()
@@ -266,13 +245,13 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     }
     
     func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return maxVideo
+        return thumbnails.count
     }
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         let cell : UITableViewCell = tableView.dequeueReusableCellWithIdentifier("cell") as UITableViewCell!
         
-        cell.imageView?.image = UIImage(data: NSData(contentsOfURL: thumbnailFileUrl(maxVideo - indexPath.row - 1))!)
+        cell.imageView?.image = thumbnails[indexPath.row]
         cell.backgroundColor = UIColor.clearColor()
         
         return cell
@@ -286,158 +265,150 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         return true
     }
     
-    
-    func merge() {
-        let assetOptions = [AVURLAssetPreferPreciseDurationAndTimingKey : true]
+    func cropVideo(outputFileURL:NSURL){
         
-        let firstAsset = AVURLAsset(URL: mergedFileUrl(maxVideo-1), options: assetOptions);
-        let secondAsset = AVURLAsset(URL: videoFileUrl(maxVideo), options: assetOptions);
+        let videoAsset: AVAsset = AVAsset(URL: outputFileURL) as AVAsset
         
-        let firstTime = maxVideo == 0
+        let clipVideoTrack = videoAsset.tracksWithMediaType(AVMediaTypeVideo).first! as AVAssetTrack
         
+        let composition = AVMutableComposition()
+        composition.addMutableTrackWithMediaType(AVMediaTypeVideo, preferredTrackID: CMPersistentTrackID())
         
-        if firstTime {
-            let fileManager = NSFileManager.defaultManager();
-            do {
-                try fileManager.copyItemAtURL(videoFileUrl(maxVideo), toURL: mergedFileUrl(maxVideo))
-            }catch {
-                // error
-            }
-            return
-        }
+        let videoComposition = AVMutableVideoComposition()
         
-        // 1 - Create AVMutableComposition object. This object will hold your AVMutableCompositionTrack instances.
-        let mixComposition = AVMutableComposition()
+        videoComposition.renderSize = CGSizeMake(720, 720)
+        videoComposition.frameDuration = CMTimeMake(1, 30)
         
-        // 2 - Create two video tracks
+        let instruction = AVMutableVideoCompositionInstruction()
         
-        let firstTrack = mixComposition.addMutableTrackWithMediaType(AVMediaTypeVideo, preferredTrackID: Int32(kCMPersistentTrackID_Invalid))
+        instruction.timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMakeWithSeconds(180, 30))
         
-        let track2 = secondAsset.tracksWithMediaType(AVMediaTypeVideo)[0]
-        let track1 = firstAsset.tracksWithMediaType(AVMediaTypeVideo)[0]
+        // rotate to portrait
+        let transformer:AVMutableVideoCompositionLayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: clipVideoTrack)
+        let t1 = CGAffineTransformMakeTranslation(720, 0);
+        let t2 = CGAffineTransformRotate(t1, CGFloat(M_PI_2));
         
-        do {
-            try firstTrack.insertTimeRange(CMTimeRangeMake(kCMTimeZero, track1.timeRange.duration), ofTrack:track1 , atTime: kCMTimeZero)
-        } catch _ {
-            print("Failed to load first track")
-        }
+        transformer.setTransform(t2, atTime: kCMTimeZero)
+        instruction.layerInstructions = [transformer]
+        videoComposition.instructions = [instruction]
         
-        let secondTrack = mixComposition.addMutableTrackWithMediaType(AVMediaTypeVideo, preferredTrackID: Int32(kCMPersistentTrackID_Invalid))
-        do {
-            
-            try secondTrack.insertTimeRange(CMTimeRangeMake(kCMTimeZero, track2.timeRange.duration), ofTrack:track2 , atTime: track1.timeRange.duration)
-        } catch _ {
-            print("Failed to load second track")
-        }
-        
-        // 2.1
-        let mainInstruction = AVMutableVideoCompositionInstruction()
-        mainInstruction.timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeAdd( track1.timeRange.duration, track2.timeRange.duration))
-        
-        // 2.2
-        let firstInstruction = videoCompositionInstructionForTrack(firstTrack, asset: firstAsset)
-        firstInstruction.setOpacity(0.0, atTime: track1.timeRange.duration)
-        let secondInstruction = videoCompositionInstructionForTrack(secondTrack, asset: secondAsset)
-        
-        mainInstruction.layerInstructions = [firstInstruction, secondInstruction]
-        
-        // 2.3
-        
-        let mainComposition = AVMutableVideoComposition()
-        mainComposition.instructions = [mainInstruction]
-        mainComposition.frameDuration = CMTimeMake(1, 30)
-        mainComposition.renderSize = CGSize(width: UIScreen.mainScreen().bounds.width, height: UIScreen.mainScreen().bounds.height)
-        
-        // 3 - Audio track
-//        if let loadedAudioAsset = audioAsset {
-//            let audioTrack = mixComposition.addMutableTrackWithMediaType(AVMediaTypeAudio, preferredTrackID: 0)
-//            do {
-//                try audioTrack.insertTimeRange(CMTimeRangeMake(kCMTimeZero, CMTimeAdd(firstAsset.duration, secondAsset.duration)),
-//                                               ofTrack: loadedAudioAsset.tracksWithMediaType(AVMediaTypeAudio)[0] ,
-//                                               atTime: kCMTimeZero)
-//            } catch _ {
-//                print("Failed to load Audio track")
-//            }
-//        }
-//        
-        // 4 - Get path
-//        let documentDirectory = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0]
-//        let dateFormatter = NSDateFormatter()
-//        dateFormatter.dateStyle = .LongStyle
-//        dateFormatter.timeStyle = .ShortStyle
-//        let date = dateFormatter.stringFromDate(NSDate())
-//        let savePath = (documentDirectory as NSString).stringByAppendingPathComponent("mergeVideo-\(date).mov")
-        
-        
-        let url = mergedFileUrl(maxVideo)
-        
-        // 5 - Create Exporter
-        guard let exporter = AVAssetExportSession(asset: mixComposition, presetName: AVAssetExportPresetHighestQuality) else { return }
-        exporter.outputURL = url
+        let formatter = NSDateFormatter()
+        formatter.dateFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"
+        let date = NSDate()
+        let documentsPath = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as NSString
+        let outputPath = "\(documentsPath)/captures/\(formatter.stringFromDate(date)).mp4"
+        let outputURL = NSURL(fileURLWithPath: outputPath)
+        let exporter = AVAssetExportSession(asset: videoAsset, presetName: AVAssetExportPresetHighestQuality)!
+        exporter.videoComposition = videoComposition
+        exporter.outputURL = outputURL
         exporter.outputFileType = AVFileTypeQuickTimeMovie
-//        exporter.shouldOptimizeForNetworkUse = true
-        exporter.videoComposition = mainComposition
-        exporter.timeRange = CMTimeRangeMake(kCMTimeZero, CMTimeAdd( track1.timeRange.duration, track2.timeRange.duration - CMTimeMake(5, 1000) ))
+        
+        exporter.exportAsynchronouslyWithCompletionHandler({ () -> Void in
+            dispatch_async(dispatch_get_main_queue(), {
+                self.handleExportCompletion(exporter)
+            })
+        })
+    }
+    
+    func handleExportCompletion(session: AVAssetExportSession) {
+        let thumbnail =  self.getThumbnail(session.outputURL!)
+        videoClips.append(session.outputURL!)
+        defaults.setObject(videoClips, forKey: "videoClips")
+        
+        thumbnails.append(thumbnail)
+        self.tableView.reloadData()
+        if videoClips.count > 1{
+            mergeVideoClips()
+        }
+        
+    }
+    
+    func getThumbnail(outputFileURL:NSURL) -> UIImage {
+        
+        let clip = AVURLAsset(URL: outputFileURL)
+        let imgGenerator = AVAssetImageGenerator(asset: clip)
+        let cgImage = try! imgGenerator.copyCGImageAtTime(
+            CMTimeMake(0, 1), actualTime: nil)
+        let uiImage = UIImage(CGImage: cgImage)
+        return uiImage
+        
+    }
+    
+    func mergeVideoClips(){
+        
+        let composition = AVMutableComposition()
+        
+        let videoTrack = composition.addMutableTrackWithMediaType(AVMediaTypeVideo, preferredTrackID: kCMPersistentTrackID_Invalid)
+        
+        let audioTrack = composition.addMutableTrackWithMediaType(AVMediaTypeAudio, preferredTrackID: kCMPersistentTrackID_Invalid)
+        
+        var time:Double = 0.0
+        for video in self.videoClips {
+            let asset = AVAsset(URL: video)
+            let videoAssetTrack = asset.tracksWithMediaType(AVMediaTypeVideo)[0]
+            let audioAssetTrack = asset.tracksWithMediaType(AVMediaTypeAudio)[0]
+            let atTime = CMTime(seconds: time, preferredTimescale:1)
+            do{
+                try videoTrack.insertTimeRange(CMTimeRangeMake(kCMTimeZero, asset.duration) , ofTrack: videoAssetTrack, atTime: atTime)
+                
+                try audioTrack.insertTimeRange(CMTimeRangeMake(kCMTimeZero, asset.duration) , ofTrack: audioAssetTrack, atTime: atTime)
+                
+            }catch{
+                print("something bad happend I don't want to talk about it")
+            }
+            time +=  asset.duration.seconds
+        }
+        
+        let directory = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as String
+        let dateFormatter = NSDateFormatter()
+        dateFormatter.dateStyle = .LongStyle
+        dateFormatter.timeStyle = .ShortStyle
+        let date = dateFormatter.stringFromDate(NSDate())
+        let savePath = "\(directory)/merged/mergedVideo-\(date).mp4"
+        let url = NSURL(fileURLWithPath: savePath)
+        
+        let exporter = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality)
+        exporter?.outputURL = url
+        exporter?.shouldOptimizeForNetworkUse = true
+        exporter?.outputFileType = AVFileTypeMPEG4
+        exporter?.exportAsynchronouslyWithCompletionHandler({ () -> Void in
+            
+            self.exportReady = true
+            self.lastExport = url
+            
+            dispatch_async(dispatch_get_main_queue(), { () -> Void in
+                self.finalExportCompletion(exporter!)
+            })
+        })
+    }
+    
+    func finalExportCompletion(session: AVAssetExportSession) {
+        let library = ALAssetsLibrary()
+        if library.videoAtPathIsCompatibleWithSavedPhotosAlbum(session.outputURL) {
+            var completionBlock: ALAssetsLibraryWriteVideoCompletionBlock
+            
+            completionBlock = { assetUrl, error in
+                if error != nil {
+                    print("error writing to disk")
+                } else {
+                    
+                }
+            }
+            
+            library.writeVideoAtPathToSavedPhotosAlbum(session.outputURL, completionBlock: completionBlock)
+        }
+        
+//        let player = AVPlayer(URL: session.outputURL!)
+//        let playerController = AVPlayerViewController()
+//        playerController.player = player
+//        self.presentViewController(playerController, animated: true) {
+//            player.play()
+//        }
         
         
-        // 6 - Perform the Export
-        exporter.exportAsynchronouslyWithCompletionHandler() {
-            dispatch_async(dispatch_get_main_queue()) { _ in
-//                self.exportDidFinish(exporter)
-                print ("finished")
-                self.showingTableView = false
-                self.animate()
+        
+    }
 
-            }
-        }
-        
-    }
-    
-    func videoCompositionInstructionForTrack(track: AVCompositionTrack, asset: AVAsset) -> AVMutableVideoCompositionLayerInstruction {
-        let instruction = AVMutableVideoCompositionLayerInstruction(assetTrack: track)
-        let assetTrack = asset.tracksWithMediaType(AVMediaTypeVideo)[0]
-        
-        let transform = assetTrack.preferredTransform
-        let assetInfo = orientationFromTransform(transform)
-        
-        var scaleToFitRatio = UIScreen.mainScreen().bounds.width / assetTrack.naturalSize.width
-        if assetInfo.isPortrait {
-            scaleToFitRatio = UIScreen.mainScreen().bounds.width / assetTrack.naturalSize.height
-            let scaleFactor = CGAffineTransformMakeScale(scaleToFitRatio, scaleToFitRatio)
-            instruction.setTransform(CGAffineTransformConcat(assetTrack.preferredTransform, scaleFactor),
-                                     atTime: kCMTimeZero)
-        } else {
-            let scaleFactor = CGAffineTransformMakeScale(scaleToFitRatio, scaleToFitRatio)
-            var concat = CGAffineTransformConcat(CGAffineTransformConcat(assetTrack.preferredTransform, scaleFactor), CGAffineTransformMakeTranslation(0, UIScreen.mainScreen().bounds.width / 2))
-            if assetInfo.orientation == .Down {
-                let fixUpsideDown = CGAffineTransformMakeRotation(CGFloat(M_PI))
-                let windowBounds = UIScreen.mainScreen().bounds
-                let yFix = assetTrack.naturalSize.height + windowBounds.height
-                let centerFix = CGAffineTransformMakeTranslation(assetTrack.naturalSize.width, yFix)
-                concat = CGAffineTransformConcat(CGAffineTransformConcat(fixUpsideDown, centerFix), scaleFactor)
-            }
-            instruction.setTransform(concat, atTime: kCMTimeZero)
-        }
-        
-        return instruction
-    }
-    
-    func orientationFromTransform(transform: CGAffineTransform) -> (orientation: UIImageOrientation, isPortrait: Bool) {
-        var assetOrientation = UIImageOrientation.Up
-        var isPortrait = false
-        if transform.a == 0 && transform.b == 1.0 && transform.c == -1.0 && transform.d == 0 {
-            assetOrientation = .Right
-            isPortrait = true
-        } else if transform.a == 0 && transform.b == -1.0 && transform.c == 1.0 && transform.d == 0 {
-            assetOrientation = .Left
-            isPortrait = true
-        } else if transform.a == 1.0 && transform.b == 0 && transform.c == 0 && transform.d == 1.0 {
-            assetOrientation = .Up
-        } else if transform.a == -1.0 && transform.b == 0 && transform.c == 0 && transform.d == -1.0 {
-            assetOrientation = .Down
-        }
-        return (assetOrientation, isPortrait)
-    }
 }
 
 
