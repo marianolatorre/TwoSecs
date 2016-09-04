@@ -21,7 +21,7 @@
 		465AB7B01D7C9230007C32CA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		465AB7B21D7CB6BF007C32CA /* CollectionViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CollectionViewCell.swift; sourceTree = "<group>"; };
 		467F6EDC1D74B90700CF60C4 /* ForceTouchGestureRecognizer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ForceTouchGestureRecognizer.swift; sourceTree = "<group>"; };
-		46FF4EB71A72DA0300350F09 /* PhotoPicker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhotoPicker.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		46FF4EB71A72DA0300350F09 /* TwoSecs.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TwoSecs.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		46FF4EBB1A72DA0300350F09 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		46FF4EBC1A72DA0300350F09 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		46FF4EBE1A72DA0300350F09 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -44,7 +44,7 @@
 		46FF4EAE1A72DA0300350F09 = {
 			isa = PBXGroup;
 			children = (
-				46FF4EB91A72DA0300350F09 /* PhotoPicker */,
+				46FF4EB91A72DA0300350F09 /* TwoSecs */,
 				46FF4EB81A72DA0300350F09 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -52,12 +52,12 @@
 		46FF4EB81A72DA0300350F09 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				46FF4EB71A72DA0300350F09 /* PhotoPicker.app */,
+				46FF4EB71A72DA0300350F09 /* TwoSecs.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		46FF4EB91A72DA0300350F09 /* PhotoPicker */ = {
+		46FF4EB91A72DA0300350F09 /* TwoSecs */ = {
 			isa = PBXGroup;
 			children = (
 				467F6EDC1D74B90700CF60C4 /* ForceTouchGestureRecognizer.swift */,
@@ -70,7 +70,8 @@
 				46FF4EC51A72DA0300350F09 /* LaunchScreen.xib */,
 				46FF4EBA1A72DA0300350F09 /* Supporting Files */,
 			);
-			path = PhotoPicker;
+			name = TwoSecs;
+			path = TwoSecs;
 			sourceTree = "<group>";
 		};
 		46FF4EBA1A72DA0300350F09 /* Supporting Files */ = {
@@ -84,9 +85,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		46FF4EB61A72DA0300350F09 /* PhotoPicker */ = {
+		46FF4EB61A72DA0300350F09 /* TwoSecs */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 46FF4ED61A72DA0300350F09 /* Build configuration list for PBXNativeTarget "PhotoPicker" */;
+			buildConfigurationList = 46FF4ED61A72DA0300350F09 /* Build configuration list for PBXNativeTarget "TwoSecs" */;
 			buildPhases = (
 				46FF4EB31A72DA0300350F09 /* Sources */,
 				46FF4EB41A72DA0300350F09 /* Frameworks */,
@@ -96,9 +97,9 @@
 			);
 			dependencies = (
 			);
-			name = PhotoPicker;
-			productName = PhotoPicker;
-			productReference = 46FF4EB71A72DA0300350F09 /* PhotoPicker.app */;
+			name = TwoSecs;
+			productName = TwoSecs;
+			productReference = 46FF4EB71A72DA0300350F09 /* TwoSecs.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -117,7 +118,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 46FF4EB21A72DA0300350F09 /* Build configuration list for PBXProject "PhotoPicker" */;
+			buildConfigurationList = 46FF4EB21A72DA0300350F09 /* Build configuration list for PBXProject "TwoSecs" */;
 			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 0;
@@ -130,7 +131,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				46FF4EB61A72DA0300350F09 /* PhotoPicker */,
+				46FF4EB61A72DA0300350F09 /* TwoSecs */,
 			);
 		};
 /* End PBXProject section */
@@ -264,11 +265,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				INFOPLIST_FILE = PhotoPicker/Info.plist;
+				INFOPLIST_FILE = TwoSecs/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.marianolatorre.PhotoPicker;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.marianolatorre.TwoSecs;
+				PRODUCT_NAME = TwoSecs;
 			};
 			name = Debug;
 		};
@@ -276,18 +277,18 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				INFOPLIST_FILE = PhotoPicker/Info.plist;
+				INFOPLIST_FILE = TwoSecs/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.marianolatorre.PhotoPicker;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.marianolatorre.TwoSecs;
+				PRODUCT_NAME = TwoSecs;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		46FF4EB21A72DA0300350F09 /* Build configuration list for PBXProject "PhotoPicker" */ = {
+		46FF4EB21A72DA0300350F09 /* Build configuration list for PBXProject "TwoSecs" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				46FF4ED41A72DA0300350F09 /* Debug */,
@@ -296,7 +297,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		46FF4ED61A72DA0300350F09 /* Build configuration list for PBXNativeTarget "PhotoPicker" */ = {
+		46FF4ED61A72DA0300350F09 /* Build configuration list for PBXNativeTarget "TwoSecs" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				46FF4ED71A72DA0300350F09 /* Debug */,

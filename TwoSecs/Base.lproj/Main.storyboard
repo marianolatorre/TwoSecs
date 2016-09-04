@@ -8,7 +8,7 @@
         <!--View Controller-->
         <scene sceneID="SUt-ZB-mLW">
             <objects>
-                <viewController id="oE6-Uq-261" customClass="ViewController" customModule="PhotoPicker" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="oE6-Uq-261" customClass="ViewController" customModule="TwoSecs" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="tEe-Uh-ZPw"/>
                         <viewControllerLayoutGuide type="bottom" id="g51-da-DN7"/>
@@ -37,7 +37,7 @@
                                     <inset key="sectionInset" minX="0.0" minY="0.0" maxX="0.0" maxY="0.0"/>
                                 </collectionViewFlowLayout>
                                 <cells>
-                                    <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="collectionCell" id="FTI-wQ-K6L" customClass="CollectionViewCell" customModule="PhotoPicker" customModuleProvider="target">
+                                    <collectionViewCell opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="collectionCell" id="FTI-wQ-K6L" customClass="CollectionViewCell" customModule="TwoSecs" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="0.0" width="150" height="150"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center">

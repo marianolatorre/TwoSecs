@@ -1,6 +1,6 @@
 //
 //  AppDelegate.swift
-//  PhotoPicker
+//  TwoSecs
 //
 //  Created by Mariano Latorre 
 
