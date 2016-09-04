@@ -55,7 +55,7 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         get {return _showingTableView}
         set{
             if newValue {
-                takeVideoButton.setImage(UIImage(named: "Delete-100"), forState: .Normal)
+                takeVideoButton.setImage(UIImage(named: "Trash-Can"), forState: .Normal)
             }else {
                 takeVideoButton.setImage(UIImage(named: "record"), forState: .Normal)
             }
