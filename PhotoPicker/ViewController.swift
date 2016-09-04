@@ -24,7 +24,6 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     var movieOutput: AVCaptureMovieFileOutput?
     var previewLayer: AVCaptureVideoPreviewLayer?
     var defaults: NSUserDefaults = NSUserDefaults.standardUserDefaults()
-    let nextVideoKey: String = "nextVideoKey"
     var capturing : Bool = false
     var showingTableView : Bool = false
     var showingPlayer : Bool = false
@@ -42,8 +41,25 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        videoClips = defaults.objectForKey("videoClips") as? [NSURL] ?? [NSURL]()
+        videoClips = (defaults.objectForKey("videoClipPaths") as? [String] ?? [String]() ).flatMap{
+            let filename = $0
+            let documentsPath = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as NSString
+            let path = "\(documentsPath)/\(filename)"
+            let url = NSURL(fileURLWithPath: path)
+            return url
+        }
         
+        print(videoClips)
+        
+        for clipUrl in videoClips {
+            var error: NSError?
+            if clipUrl.checkResourceIsReachableAndReturnError(&error) == false {
+                return
+            }            
+            
+            thumbnails.append(getThumbnail(clipUrl))
+        }
+
         captureSession = AVCaptureSession()
         
         let forceTouchRecognizer = ForceTouchGestureRecognizer(target: self, action: #selector(handleForceTouchGesture))
@@ -78,7 +94,9 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         }
         beginSession()
 
-
+        if videoClips.count > 1 {
+            mergeVideoClips()
+        }
     }
     
     func beginSession() -> Void {
@@ -123,17 +141,11 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         captureSession!.startRunning()
     }
     
-    func documentsSaveDir() -> String {
-        let nsDocumentDirectory = NSSearchPathDirectory.DocumentDirectory
-        let nsUserDomainMask = NSSearchPathDomainMask.UserDomainMask
-        let paths = NSSearchPathForDirectoriesInDomains(nsDocumentDirectory, nsUserDomainMask, true)
-        if let dirPath = paths.first {
-            return dirPath
-        }
-        return ""
+    override func viewDidAppear(animated: Bool) {
+        super.viewDidAppear(animated)
+        previewLayer!.frame = previewView.bounds
     }
-    
-    
+
     func handleForceTouchGesture(gestureRecognizer: ForceTouchGestureRecognizer) {
         
         switch gestureRecognizer.state {
@@ -198,15 +210,9 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         }
     }
     
-    override func viewDidAppear(animated: Bool) {
-        super.viewDidAppear(animated)
-        previewLayer!.frame = previewView.bounds
-    }
-
-    
     @IBAction func captureVideoButton(sender: AnyObject) {
         
-        if !capturing {
+        if !capturing && !showingPlayer {
             capturing = true
             
             let formatter = NSDateFormatter()
@@ -224,7 +230,6 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     @IBAction func didPressTakeAnother(sender: AnyObject) {
         captureSession!.startRunning()
     }
-
     
     func captureOutput(captureOutput: AVCaptureFileOutput!, didStartRecordingToOutputFileAtURL fileURL: NSURL!, fromConnections connections: [AnyObject]!) {
     }
@@ -234,10 +239,6 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         showingTableView = true
         animate()
         cropVideo(outputFileURL)
-        
-        capturing = false
-        
-        tableView.reloadData()
     }
     
     func numberOfSectionsInTableView(tableView: UITableView) -> Int {
@@ -296,7 +297,7 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         formatter.dateFormat = "yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"
         let date = NSDate()
         let documentsPath = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as NSString
-        let outputPath = "\(documentsPath)/captures/\(formatter.stringFromDate(date)).mp4"
+        let outputPath = "\(documentsPath)/\(formatter.stringFromDate(date)).mp4"
         let outputURL = NSURL(fileURLWithPath: outputPath)
         let exporter = AVAssetExportSession(asset: videoAsset, presetName: AVAssetExportPresetHighestQuality)!
         exporter.videoComposition = videoComposition
@@ -313,25 +314,39 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
     func handleExportCompletion(session: AVAssetExportSession) {
         let thumbnail =  self.getThumbnail(session.outputURL!)
         videoClips.append(session.outputURL!)
-        defaults.setObject(videoClips, forKey: "videoClips")
-        
         thumbnails.append(thumbnail)
+        
+        
+        print(videoClips)
+        
+        let textPaths : [String] = videoClips.flatMap{
+            let theFileName = ($0.absoluteString as NSString).lastPathComponent
+            return theFileName
+        }
+        
+        defaults.setObject(textPaths, forKey: "videoClipPaths")
+        
+        capturing = false
+        tableView.reloadData()
+        
+        self.showingTableView = false
+        self.animate()
+        
         self.tableView.reloadData()
         if videoClips.count > 1{
             mergeVideoClips()
-        }
-        
+        }        
     }
     
     func getThumbnail(outputFileURL:NSURL) -> UIImage {
-        
+       
+        print ("thumbnail: \(outputFileURL)")
         let clip = AVURLAsset(URL: outputFileURL)
         let imgGenerator = AVAssetImageGenerator(asset: clip)
         let cgImage = try! imgGenerator.copyCGImageAtTime(
             CMTimeMake(0, 1), actualTime: nil)
         let uiImage = UIImage(CGImage: cgImage)
         return uiImage
-        
     }
     
     func mergeVideoClips(){
@@ -364,7 +379,7 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         dateFormatter.dateStyle = .LongStyle
         dateFormatter.timeStyle = .ShortStyle
         let date = dateFormatter.stringFromDate(NSDate())
-        let savePath = "\(directory)/merged/mergedVideo-\(date).mp4"
+        let savePath = "\(directory)/mergedVideo-\(date).mp4"
         let url = NSURL(fileURLWithPath: savePath)
         
         let exporter = AVAssetExportSession(asset: composition, presetName: AVAssetExportPresetHighestQuality)
@@ -372,7 +387,6 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
         exporter?.shouldOptimizeForNetworkUse = true
         exporter?.outputFileType = AVFileTypeMPEG4
         exporter?.exportAsynchronouslyWithCompletionHandler({ () -> Void in
-            
             self.exportReady = true
             self.lastExport = url
             
@@ -397,19 +411,5 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate, UI
             
             library.writeVideoAtPathToSavedPhotosAlbum(session.outputURL, completionBlock: completionBlock)
         }
-        
-//        let player = AVPlayer(URL: session.outputURL!)
-//        let playerController = AVPlayerViewController()
-//        playerController.player = player
-//        self.presentViewController(playerController, animated: true) {
-//            player.play()
-//        }
-        
-        
-        
     }
-
 }
-
-
-
